@@ -12,13 +12,13 @@ public class RegulateurPID : MonoBehaviour
     public float regulateur_consigne;
     public float regulateur_erreur;
 
-    public float Kp = 1;
-    public float Ki = 0;
-    public float Kd = 0;
+    public float Kp { get; set; }
+    public float Ki { get; set; }
+    public float Kd { get; set; }
     public float OutMax = 0;
     public float OutMin = 0;
 
-    public float integralTermPeriod_sec;
+    public float integralTermPeriod_sec { get; set; }
 
     public float proportionalTerm;
     public float integralTerm;
@@ -37,17 +37,64 @@ public class RegulateurPID : MonoBehaviour
     public float randomConsigne_min;
     public float randomConsigne_max;
 
+    public TMPro.TMP_InputField if_consigne;
+    public TMPro.TMP_InputField if_Kp;
+    public TMPro.TMP_InputField if_Ki;
+    public TMPro.TMP_InputField if_Ki_Period_sec;
+    public TMPro.TMP_InputField if_Kd;
+
+    public SlidersManager slidersManager;
+
+    public void _Set_Kp(string text) { SetValue(text, "Kp"); }
+    public void _Set_Ki(string text) { SetValue(text, "Ki"); }
+    public void _Set_Kd(string text) { SetValue(text, "Kd"); }
+    public void _Set_Ki_Period_sec(string text) { SetValue(text, "integralTermPeriod_sec"); }
+
+    void SetValue(string textinput, string variablename)
+    {
+        float? v = GetValueFromText(textinput);
+        if (v != null)
+        {
+            System.Reflection.PropertyInfo propName = this.GetType().GetProperty(variablename);
+            if (propName != null)
+                propName.SetValue(this, v.Value, null);
+        }
+    }
+
+    public static float? GetValueFromText(string text)
+    {
+        if (text == null) return null;
+        if (text == "") return null;
+
+        //        text = text.Replace(".", ",");
+
+        if (float.TryParse(text, out var v))
+            return v;
+        else
+            return null;
+    }
+
     void Start()
     {
         //init régulateur
         pidController = new PidController();
 
         //init courbes
-        graphsManager._NewCurve(gameObject.name, 0.03f, Color.blue, -0.009f);
+        graphsManager._NewCurve(gameObject.name, 0.03f, new Color(22f / 255, 182f / 255, 185f / 255), -0.009f);
         graphsManager._NewCurve(gameObject.name + " consigne", 0.03f, Color.red, -0.008f);
 
         //graphsManager._NewPoint(gameObject.name, new Vector2(-13, -1));
         //graphsManager._NewPoint(gameObject.name + " consigne", new Vector2(-13, -2));
+        InitParamFromUI();
+        slidersManager._SetConsigneAuto(regulateur_consigne);
+    }
+
+    private void InitParamFromUI()
+    {
+        _Set_Kp(if_Kp.text);
+        _Set_Ki(if_Ki.text);
+        _Set_Kd(if_Kd.text);
+        _Set_Ki_Period_sec(if_Ki_Period_sec.text);
     }
 
     void Update() //TODO each frame => c'est peut être un peu beaucoup !?
@@ -75,6 +122,13 @@ public class RegulateurPID : MonoBehaviour
         derivativeTerm = pidController.derivativeTerm;
         regulateur_erreur = pidController.regulateur_erreur;
 
+        //Update UI
+        if_Kp.text = pidController.Kp.ToString();
+        if_Ki.text = pidController.Ki.ToString();
+        if_Kd.text = pidController.Kd.ToString();
+        if_Ki_Period_sec.text = pidController.integralTermPeriod_sec.ToString();
+
+
         //Update Gameobject
         systeme.vanne_regulante_position_souhaitee = regulateur_sortie;
 
@@ -92,8 +146,9 @@ public class RegulateurPID : MonoBehaviour
             {
                 if (t - validation_erreur_duree_sec >= pourcentage_0_1_validation_erreur_duree_sec)
                 {
-                    regulateur_consigne = (float)(int)(Random.Range(randomConsigne_min, randomConsigne_max)*100)/100;
+                    regulateur_consigne = (float)(int)(Random.Range(randomConsigne_min, randomConsigne_max) * 100) / 100;
                     //validation_erreur_duree_sec = t;
+                    slidersManager._SetConsigneAuto(regulateur_consigne);
                 }
             }
             else

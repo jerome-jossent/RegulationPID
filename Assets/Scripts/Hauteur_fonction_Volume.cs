@@ -35,6 +35,10 @@ public class Hauteur_fonction_Volume : MonoBehaviour
     public float vanne_regulante_position;
     public float vanne_regulante_position_erreur;
     public float vanne_regulante_vitesse_positionnement;
+    public TMPro.TMP_InputField if_vanne_regulante_vitesse_positionnement;
+
+    public GameObject niveau;
+    public RegulateurPID regulateurPID;
 
     public float debit_remplissage_Lps;
     #endregion
@@ -59,6 +63,34 @@ public class Hauteur_fonction_Volume : MonoBehaviour
 
         //volume initial
         Volume_L = Section_m2 * Hauteur_m * 1000;
+
+        if_vanne_regulante_vitesse_positionnement.text = vanne_regulante_vitesse_positionnement.ToString();
+    }
+
+    public void _Set_vanne_regulante_vitesse_positionnement(string text) { SetValue(text, "vanne_regulante_vitesse_positionnement"); }
+
+    void SetValue(string textinput, string variablename)
+    {
+        float? v = GetValueFromText(textinput);
+        if (v != null)
+        {
+            System.Reflection.PropertyInfo propName = this.GetType().GetProperty(variablename);
+            if (propName != null)
+                propName.SetValue(this, v.Value, null);
+        }
+    }
+
+    public static float? GetValueFromText(string text)
+    {
+        if (text == null) return null;
+        if (text == "") return null;
+
+        //        text = text.Replace(".", ",");
+
+        if (float.TryParse(text, out var v))
+            return v;
+        else
+            return null;
     }
 
     void Update()
@@ -90,5 +122,7 @@ public class Hauteur_fonction_Volume : MonoBehaviour
                 transform.position = new Vector3(transform.position.x, Hauteur_m / 2, transform.position.z);
                 break;
         }
+
+        niveau.transform.position=new Vector3(niveau.transform.position.x, regulateurPID.regulateur_consigne, niveau.transform.position.z);
     }
 }

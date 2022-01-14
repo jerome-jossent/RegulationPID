@@ -14,12 +14,6 @@ public class GraphManager : MonoBehaviour
     public GameObject quadrillageV;
     public GameObject quadrillageH;
 
-    public Vector3 origine;
-    //public Vector3 xMax;
-    //public Vector3 xMin;
-    //public Vector3 yMax;
-    //public Vector3 yMin;
-
     //TODO : comment mettre ça en forme ??????
     public float x_div; //10 sec => 1 div => 50 cm (dans unity)
     public float y_div; // 1 m   => 1 div =>  1 m (dans unity)
@@ -46,10 +40,6 @@ public class GraphManager : MonoBehaviour
             nbrPointsMax_parSerie = 100;
         }
 
-        // centré
-        origine = new Vector3(zonegraph.transform.position.x,
-                              zonegraph.transform.position.y,
-                              zonegraph.transform.position.z);
         graphs = new Dictionary<string, SerieManager>();
         firstUpdate = true;
     }
@@ -116,11 +106,12 @@ public class GraphManager : MonoBehaviour
             Compute_CoeffRegLin_a_b(yMin, yMax, zonegraph.transform.position.y - zonegraph.transform.lossyScale.y / 2, zonegraph.transform.position.y + zonegraph.transform.lossyScale.y / 2, out aY, out bY);
 
             //Update courbes
-            if (needToUpdateGraphViewX || needToUpdateGraphViewY)
-            {
-                foreach (SerieManager g in graphs.Values)
-                    g.UpdateDATABox(aX, bX, aY, bY, zonegraph.transform.position.z);
-            }
+            //if (needToUpdateGraphViewX || needToUpdateGraphViewY)
+            //{
+            //    foreach (SerieManager g in graphs.Values)
+            //        g.UpdateDATABox();
+            //g.UpdateDATABox(aX, bX, aY, bY, zonegraph.transform.position.z);
+            //}
 
             //Update axes & quadrillages
             if (needToUpdateGraphViewX) UpdateView_X();
@@ -170,10 +161,10 @@ public class GraphManager : MonoBehaviour
     {
         Vector3 xMin = new Vector3(zonegraph.transform.position.x - zonegraph.transform.lossyScale.x / 2,
                            val,
-                           origine.z + layer_origine_lower_is_front);
+                           zonegraph.transform.position.z + layer_origine_lower_is_front);
         Vector3 xMax = new Vector3(zonegraph.transform.position.x + zonegraph.transform.lossyScale.x / 2,
                            val,
-                           origine.z + layer_origine_lower_is_front);
+                           zonegraph.transform.position.z + layer_origine_lower_is_front);
         SetLineRenderer(axeX, new Vector3[] { xMin, xMax }, epaisseur, color);
     }
 
@@ -181,10 +172,10 @@ public class GraphManager : MonoBehaviour
     {
         Vector3 yMin = new Vector3(val,
                            zonegraph.transform.position.y - zonegraph.transform.lossyScale.y / 2,
-                           origine.z + layer_origine_lower_is_front);
+                           zonegraph.transform.position.z + layer_origine_lower_is_front);
         Vector3 yMax = new Vector3(val,
                            zonegraph.transform.position.y + zonegraph.transform.lossyScale.y / 2,
-                           origine.z + layer_origine_lower_is_front);
+                           zonegraph.transform.position.z + layer_origine_lower_is_front);
         SetLineRenderer(axeY, new Vector3[] { yMin, yMax }, epaisseur, color);
     }
 
@@ -207,12 +198,12 @@ public class GraphManager : MonoBehaviour
             go.transform.SetParent(quadrillageV.transform);
             LineRenderer q = go.AddComponent<LineRenderer>();
             SetLineRenderer(q,
-                            new Vector3[] { new Vector3(origine.x + i,
+                            new Vector3[] { new Vector3(zonegraph.transform.position.x + i,
                                                         zonegraph.transform.position.y - zonegraph.transform.lossyScale.y / 2,
-                                                        origine.z + layer_origine_lower_is_front),
-                                            new Vector3(origine.x + i,
+                                                        zonegraph.transform.position.z + layer_origine_lower_is_front),
+                                            new Vector3(zonegraph.transform.position.x + i,
                                                         zonegraph.transform.position.y + zonegraph.transform.lossyScale.y / 2,
-                                                        origine.z + layer_origine_lower_is_front)
+                                                        zonegraph.transform.position.z + layer_origine_lower_is_front)
                                             },
                             epaisseur,
                             color);
@@ -225,12 +216,12 @@ public class GraphManager : MonoBehaviour
             go.transform.SetParent(quadrillageV.transform);
             LineRenderer q = go.AddComponent<LineRenderer>();
             SetLineRenderer(q,
-                            new Vector3[] { new Vector3(origine.x + i,
+                            new Vector3[] { new Vector3(zonegraph.transform.position.x + i,
                                                         zonegraph.transform.position.y - zonegraph.transform.lossyScale.y / 2,
-                                                        origine.z + layer_origine_lower_is_front),
-                                            new Vector3(origine.x + i,
+                                                        zonegraph.transform.position.z + layer_origine_lower_is_front),
+                                            new Vector3(zonegraph.transform.position.x + i,
                                                         zonegraph.transform.position.y + zonegraph.transform.lossyScale.y / 2,
-                                                        origine.z + layer_origine_lower_is_front)
+                                                        zonegraph.transform.position.z + layer_origine_lower_is_front)
                                             },
                             epaisseur,
                             color);
@@ -245,11 +236,63 @@ public class GraphManager : MonoBehaviour
     //    return val;
     //}
 
+    void GiveNiceValueUpper(float a, float b, out float A, out float B)
+    {
+        // a = 81 et b = 99         e = 18      log10(e) = 1.25     log(a) = 
+        // on voudra ==> A = 80 et B = 100
+
+        // a = 0.02 et b = 123.6     e = 123.4  log10(e) = 2.09
+        // on voudra ==> A = 0 et B = 125
+
+        // a = -2.6 et b = 0.53     e = 3.13    log10(e) = 0.49
+        // on voudra ==> A = -3 et B = 1
+
+        // a = -1532 et b = 3       e = 1535    log10(e) = 3.19
+        // on voudra ==> 1 = -1550 et B = 50
+
+        //quelles dimensions ? (en log)
+
+        if (a < 0)
+            A = -GetNiceNumber(-a);
+        else
+            A = GetNiceNumber(a);
+
+        if (b < 0)
+            B = -GetNiceNumber(-b);
+        else
+            B = GetNiceNumber(b);
+    }
+
+
+    float GetNiceNumber(float val)
+    {
+        bool negative = val < 0;
+        if (negative)
+            val = -val;
+
+        // get the first larger power of 10
+        var nice = Mathf.Pow(10, Mathf.Ceil(Mathf.Log10(val)));
+
+        // scale the power to a "nice enough" value
+        if (val < 0.25f * nice)
+            nice = 0.25f * nice;
+        else if (val < 0.5f * nice)
+            nice = 0.5f * nice;
+        if (negative)
+            return -nice;
+        else
+            return nice;
+    }
+
     void SetQuadrillagesH(float ecart, float epaisseur, Color color, float layer_origine_lower_is_front)
     {
         //suppression des anciens quadrillages
         while (quadrillageH.transform.childCount > 0)
             DestroyImmediate(quadrillageH.transform.GetChild(0).gameObject);
+
+
+
+
 
         float ecartMinMax = yMax - yMin;            //1.1
         float y_div_log = Mathf.Log10(ecartMinMax); //0.04
@@ -283,11 +326,11 @@ public class GraphManager : MonoBehaviour
             LineRenderer q = go.AddComponent<LineRenderer>();
             SetLineRenderer(q,
                             new Vector3[] { new Vector3(zonegraph.transform.position.x - zonegraph.transform.lossyScale.x / 2,
-                                                        origine.y + i,
-                                                        origine.z + layer_origine_lower_is_front),
+                                                        zonegraph.transform.position.y + i,
+                                                        zonegraph.transform.position.z + layer_origine_lower_is_front),
                                             new Vector3(zonegraph.transform.position.x + zonegraph.transform.lossyScale.x / 2,
-                                                        origine.y + i,
-                                                        origine.z + layer_origine_lower_is_front)
+                                                        zonegraph.transform.position.y + i,
+                                                        zonegraph.transform.position.z + layer_origine_lower_is_front)
                                             },
                             epaisseur,
                             color);
@@ -301,11 +344,11 @@ public class GraphManager : MonoBehaviour
             LineRenderer q = go.AddComponent<LineRenderer>();
             SetLineRenderer(q,
                             new Vector3[] { new Vector3(zonegraph.transform.position.x - zonegraph.transform.lossyScale.x / 2,
-                                                        origine.y + i,
-                                                        origine.z + layer_origine_lower_is_front),
+                                                        zonegraph.transform.position.y + i,
+                                                        zonegraph.transform.position.z + layer_origine_lower_is_front),
                                             new Vector3(zonegraph.transform.position.x + zonegraph.transform.lossyScale.x / 2,
-                                                        origine.y + i,
-                                                        origine.z + layer_origine_lower_is_front)
+                                                        zonegraph.transform.position.y + i,
+                                                        zonegraph.transform.position.z + layer_origine_lower_is_front)
                                             },
                             epaisseur,
                             color);
@@ -319,6 +362,11 @@ public class GraphManager : MonoBehaviour
         lr.positionCount = points.Length;
         lr.SetPositions(points);
         //épaisseur
+
+        //float scalemax = Mathf.Max(transform.localScale.x, transform.localScale.y);
+        //lr.startWidth = epaisseur / scalemax;
+        //lr.endWidth = lr.startWidth;
+
         lr.startWidth = epaisseur;
         lr.endWidth = lr.startWidth;
         //couleur
@@ -326,5 +374,6 @@ public class GraphManager : MonoBehaviour
         lr.material.color = color;
 
         lr.useWorldSpace = false;
+        lr.alignment = LineAlignment.TransformZ;
     }
 }

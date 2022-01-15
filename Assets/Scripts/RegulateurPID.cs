@@ -22,7 +22,6 @@ public class RegulateurPID : MonoBehaviour
 
     public float proportionalTerm;
     public float integralTerm;
-    public int integralTerms_count;
     public float derivativeTerm;
 
     PidController pidController;
@@ -37,11 +36,14 @@ public class RegulateurPID : MonoBehaviour
     public float randomConsigne_min;
     public float randomConsigne_max;
 
-    public TMPro.TMP_InputField if_consigne;
+    //public TMPro.TMP_InputField if_consigne;
     public TMPro.TMP_InputField if_Kp;
     public TMPro.TMP_InputField if_Ki;
     public TMPro.TMP_InputField if_Ki_Period_sec;
     public TMPro.TMP_InputField if_Kd;
+    public TMPro.TMP_Text tx_proportionalTerm;
+    public TMPro.TMP_Text tx_integralTerm;
+    public TMPro.TMP_Text tx_derivativeTerm;
 
     public SlidersManager slidersManager;
 
@@ -118,7 +120,6 @@ public class RegulateurPID : MonoBehaviour
         //pour info
         proportionalTerm = pidController.proportionalTerm;
         integralTerm = pidController.integralTerm;
-        integralTerms_count = pidController.integralTerms.Count;
         derivativeTerm = pidController.derivativeTerm;
         regulateur_erreur = pidController.regulateur_erreur;
 
@@ -127,7 +128,9 @@ public class RegulateurPID : MonoBehaviour
         if_Ki.text = pidController.Ki.ToString();
         if_Kd.text = pidController.Kd.ToString();
         if_Ki_Period_sec.text = pidController.integralTermPeriod_sec.ToString();
-
+        tx_proportionalTerm.text = pidController.proportionalTerm.ToString("0");
+        tx_integralTerm.text = pidController.integralTerm.ToString("0");
+        tx_derivativeTerm.text = pidController.derivativeTerm.ToString("0");
 
         //Update Gameobject
         systeme.vanne_regulante_position_souhaitee = regulateur_sortie;

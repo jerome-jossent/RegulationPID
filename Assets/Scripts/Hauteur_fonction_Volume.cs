@@ -9,24 +9,26 @@ public class Hauteur_fonction_Volume : MonoBehaviour
     //Kp = 2000 ; Ki = 1500000 ; Kd = 90000 ; out = 0-200 ; integral period = 5 sec
 
     #region PARAMETRES
-    public enum Geometrie { cube, cylindre }
-    public Geometrie geometrie;
-    //cube
-    public float Longueur_m, largeur_m;
-    //cylindre
-    public float Diametre_m;
-    //commun
+    public float Diametre_m { get; set; }
+    public TMPro.TMP_InputField if_Diametre_m;
+    public GameObject cuveTransparente;
+    public GameObject niveau;
+
     public float Section_m2;
+    public TMPro.TMP_Text t_Section_m2;
 
     //fuite du système
-    public float debit_fuite_Lps; //TODO : à remplacer par modèle physique : varie en fonction de la hauteur => pression => débit (seul paramètre section de sortie)
+    public float debit_fuite_Lps { get; set; } //TODO : à remplacer par modèle physique : varie en fonction de la hauteur => pression => débit (seul paramètre section de sortie)
+    public TMPro.TMP_InputField if_debit_fuite_Lps;
     #endregion
 
     #region VARIABLES
     public float Hauteur_m;
-    
+    public TMPro.TMP_Text t_Hauteur_m;
+
     //volumes
     public float Volume_L;
+    public TMPro.TMP_Text t_Volume_L;
     public float Volume_L_fuite;
     public float Volume_L_remplissage;
 
@@ -34,10 +36,9 @@ public class Hauteur_fonction_Volume : MonoBehaviour
     public float vanne_regulante_position_souhaitee;
     public float vanne_regulante_position;
     public float vanne_regulante_position_erreur;
-    public float vanne_regulante_vitesse_positionnement;
+    public float vanne_regulante_vitesse_positionnement { get; set; }
     public TMPro.TMP_InputField if_vanne_regulante_vitesse_positionnement;
 
-    public GameObject niveau;
     public RegulateurPID regulateurPID;
 
     public float debit_remplissage_Lps;
@@ -45,29 +46,34 @@ public class Hauteur_fonction_Volume : MonoBehaviour
 
     void Start()
     {
-        switch (geometrie)
-        {
-            case Geometrie.cube:
-                Longueur_m = transform.localScale.x;
-                largeur_m = transform.localScale.z;
-                Hauteur_m = transform.localScale.y;
-                Section_m2 = Longueur_m * largeur_m;
-                break;
 
-            case Geometrie.cylindre:
-                Diametre_m = transform.localScale.x;
-                Hauteur_m = transform.localScale.y * 2;
-                Section_m2 = Mathf.PI * Diametre_m * Diametre_m / 4;
-                break;
-        }
+        Diametre_m = transform.localScale.x;
+        Hauteur_m = transform.localScale.y * 2;
+        Section_m2 = Mathf.PI * Diametre_m * Diametre_m / 4;
 
         //volume initial
         Volume_L = Section_m2 * Hauteur_m * 1000;
 
-        if_vanne_regulante_vitesse_positionnement.text = vanne_regulante_vitesse_positionnement.ToString();
+        InitParamFromUI();
+    }
+
+    private void InitParamFromUI()
+    {
+        _Set_vanne_regulante_vitesse_positionnement(if_vanne_regulante_vitesse_positionnement.text);
+        _Set_debit_fuite_Lps(if_debit_fuite_Lps.text);
+        _Set_Diametre_m(if_Diametre_m.text);
     }
 
     public void _Set_vanne_regulante_vitesse_positionnement(string text) { SetValue(text, "vanne_regulante_vitesse_positionnement"); }
+    public void _Set_debit_fuite_Lps(string text) { SetValue(text, "debit_fuite_Lps"); }
+    public void _Set_Diametre_m(string text)
+    {
+        SetValue(text, "Diametre_m");
+        Section_m2 = Mathf.PI * Diametre_m * Diametre_m / 4;
+
+        cuveTransparente.transform.localScale = new Vector3(Diametre_m + 0.01f, cuveTransparente.transform.localScale.y, Diametre_m + 0.01f);
+        niveau.transform.localScale = new Vector3(Diametre_m+0.01f, niveau.transform.localScale.y, Diametre_m + 0.01f);
+    }
 
     void SetValue(string textinput, string variablename)
     {
@@ -85,12 +91,10 @@ public class Hauteur_fonction_Volume : MonoBehaviour
         if (text == null) return null;
         if (text == "") return null;
 
-        //        text = text.Replace(".", ",");
-
         if (float.TryParse(text, out var v))
             return v;
-        else
-            return null;
+
+        return null;
     }
 
     void Update()
@@ -110,19 +114,15 @@ public class Hauteur_fonction_Volume : MonoBehaviour
         Hauteur_m = Volume_L / (1000 * Section_m2);
 
         //mise à jour du modèle 3D
-        switch (geometrie)
-        {
-            case Geometrie.cube:
-                transform.localScale = new Vector3(Longueur_m, Hauteur_m, largeur_m);
-                transform.position = new Vector3(transform.position.x, Hauteur_m / 2, transform.position.z);
-                break;
+        transform.localScale = new Vector3(Diametre_m, Hauteur_m / 2, Diametre_m);
+        transform.position = new Vector3(transform.position.x, Hauteur_m / 2, transform.position.z);
 
-            case Geometrie.cylindre:
-                transform.localScale = new Vector3(Diametre_m, Hauteur_m / 2, Diametre_m);
-                transform.position = new Vector3(transform.position.x, Hauteur_m / 2, transform.position.z);
-                break;
-        }
+        niveau.transform.position = new Vector3(niveau.transform.position.x, regulateurPID.regulateur_consigne, niveau.transform.position.z);
 
-        niveau.transform.position=new Vector3(niveau.transform.position.x, regulateurPID.regulateur_consigne, niveau.transform.position.z);
+        //UI
+        t_Hauteur_m.text = Hauteur_m.ToString("0.000");
+        t_Volume_L.text = Volume_L.ToString("0.0");
+        t_Section_m2.text = Section_m2.ToString("0.000");
+
     }
 }
